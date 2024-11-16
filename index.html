@@ -21,6 +21,43 @@
         const canvas = document.getElementById('gameCanvas');
         const context = canvas.getContext('2d');
 
+        const dict = new Map();
+        //black rows
+        dict.set('0,0', 'black rook');
+        dict.set('1,0', 'black knight');
+        dict.set('2,0', 'black bishop');
+        dict.set('3,0', 'black queen');
+        dict.set('4,0', 'black king');
+        dict.set('5,0', 'black bishop');
+        dict.set('6,0', 'black knight');
+        dict.set('7,0', 'black rook');
+        dict.set('0,1', 'black pawn');
+        dict.set('1,1', 'black pawn');
+        dict.set('2,1', 'black pawn');
+        dict.set('3,1', 'black pawn');
+        dict.set('4,1', 'black pawn');
+        dict.set('5,1', 'black pawn');
+        dict.set('6,1', 'black pawn');
+        dict.set('7,1', 'black pawn');
+
+        //white pieces
+        dict.set('0,7', 'white rook');
+        dict.set('1,7', 'white knight');
+        dict.set('2,7', 'white bishop');
+        dict.set('3,7', 'white queen');
+        dict.set('4,7', 'white king');
+        dict.set('5,7', 'white bishop');
+        dict.set('6,7', 'white knight');
+        dict.set('7,7', 'white rook');
+        dict.set('0,6', 'white pawn');
+        dict.set('1,6', 'white pawn');
+        dict.set('2,6', 'white pawn');
+        dict.set('3,6', 'white pawn');
+        dict.set('4,6', 'white pawn');
+        dict.set('5,6', 'white pawn');
+        dict.set('6,6', 'white pawn');
+        dict.set('7,6', 'white pawn');
+
         // Set the canvas size to fill the window
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -31,7 +68,7 @@
         // Calculate the size of the square based on the smaller dimension of the window
         const squareSize = Math.min(canvas.width, canvas.height) - 2 * padding;
 
-        // Rectangle properties
+        // Rectangle that contains chess board
         const rect = {
             x: (canvas.width - squareSize) / 2,
             y: (canvas.height - squareSize) / 2,
@@ -41,42 +78,124 @@
         };
 
 
+        class Square {
+            constructor(chessX, chessY, x, y, size, color, piece) {
+                this.chessX = chessX;
+                this.chessY = chessY;
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.originalColor = color;
+                this.clickedColor = 'yellow';
+                this.clicked = false;
+                this.piece = piece;
+                this.svgImage = new Image();
+            }
 
+            draw(context) {
+
+                
+                context.fillStyle = this.clicked ? this.clickedColor : this.originalColor;
+                context.fillRect(this.x, this.y, this.size, this.size);
+
+
+                if (this.piece) {
+
+                    if (this.piece == 'black rook' ) {
+                        this.svgImage.src = './images/monarchy/bR.svg'
+                    } else if (this.piece == 'black pawn' ) {
+                        this.svgImage.src = './images/monarchy/bP.svg'
+                    } else if (this.piece == 'black queen' ) {
+                        this.svgImage.src = './images/monarchy/bQ.svg'
+                    } else if (this.piece == 'black king' ) {
+                        this.svgImage.src = './images/monarchy/bK.svg'
+                    } else if (this.piece == 'black bishop' ) {
+                        this.svgImage.src = './images/monarchy/bB.svg'
+                    } else if (this.piece == 'black knight' ) {
+                        this.svgImage.src = './images/monarchy/bN.svg'
+                    } else if (this.piece == 'white rook' ) {
+                        this.svgImage.src = './images/monarchy/wR.svg'
+                    } else if (this.piece == 'white pawn' ) {
+                        this.svgImage.src = './images/monarchy/wP.svg'
+                    } else if (this.piece == 'white queen' ) {
+                        this.svgImage.src = './images/monarchy/wQ.svg'
+                    } else if (this.piece == 'white king' ) {
+                        this.svgImage.src = './images/monarchy/wK.svg'
+                    } else if (this.piece == 'white bishop' ) {
+                        this.svgImage.src = './images/monarchy/wB.svg'
+                    } else if (this.piece == 'white knight' ) {
+                        this.svgImage.src = './images/monarchy/wN.svg'
+                    }
+
+                    if (this.svgImage.complete) { 
+                        context.drawImage(this.svgImage, this.x, this.y, this.size, this.size); 
+                    } else { 
+                        this.svgImage.onload = () => { context.drawImage(this.svgImage, this.x, this.y, this.size, this.size); }; 
+                    }
+                }
+
+            }
+
+            isPointInside(x, y) {
+                return x >= this.x && x <= this.x + this.size && y >= this.y && y <= this.y + this.size;
+            }
+
+            toggleColor() {
+                this.clicked = !this.clicked;
+            }
+        }
+
+        // Create an array of squares
+        const squares = [];
+        const numSquares = 5;
+
+
+
+
+        
+        
+        let placeSquare = false;
+        context.fillStyle = 'grey';
+
+        for (let jumpY = 0; jumpY < 8; jumpY++) {
+            for (let jumpX = 0; jumpX < 8; jumpX++) {
+                const piece = dict.get(`${jumpX},${jumpY}`)
+                if (placeSquare) {
+                    squares.push(new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'grey',piece));
+                } else {
+                    squares.push(new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'white',piece));
+                }
+                placeSquare = !placeSquare;
+            }
+            placeSquare = !placeSquare;
+        }
+
+
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            squares.forEach(square => {
+                if (square.isPointInside(mouseX, mouseY)) {
+                    square.toggleColor();
+                }
+            });
+        });
 
         // Game loop
         function gameLoop() {
             // Clear the canvas
             context.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the rectangle
+            
+            // Draw the board
             context.fillStyle = rect.color;
             context.fillRect(rect.x, rect.y, rect.width, rect.height);
 
-            const dict = new Map();
-            dict.set('0,6', 'rook');
-            dict.set('1,6', 'rook');
-            
-            
-            let placeSquare = false;
-            context.fillStyle = 'grey';
 
-            for (let jumpY = 0; jumpY < 8; jumpY++) {
-                for (let jumpX = 0; jumpX < 8; jumpX++) {
-                    if (placeSquare) {
-                        context.fillStyle = 'grey';
-                        context.fillRect(rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, rect.height/8);
-                    }
-                    if (dict.get(`${jumpX},${jumpY}`) === 'rook' ) {
-                        context.fillStyle = 'black';
-                        context.beginPath(); 
-                        context.arc(rect.x+jumpX*rect.height/8+rect.width/16, rect.y+jumpY*rect.width/8+rect.width/16, rect.width/16, 0, Math.PI * 2);
-                        context.fill(); 
-
-                    }
-                    placeSquare = !placeSquare;
-                }
-                placeSquare = !placeSquare;
-            }
+            //draw the smaller squares
+            squares.forEach(square => square.draw(context)); 
 
 
 
