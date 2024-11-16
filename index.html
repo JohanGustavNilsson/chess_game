@@ -170,12 +170,18 @@
 
         for (let jumpY = 0; jumpY < 8; jumpY++) {
             for (let jumpX = 0; jumpX < 8; jumpX++) {
-                const piece = dict.get(`${jumpX},${jumpY}`)
+                const piece = dict.get(`${jumpX},${jumpY}`) ? dict.get(`${jumpX},${jumpY}`) : ''
                 if (placeSquare) {
-                    squares.push(new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'grey',piece));
+                    newSquare = new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'grey',piece)
                 } else {
-                    squares.push(new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'white',piece));
+                    newSquare = new Square(jumpX, jumpY, rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, 'white',piece);
                 }
+
+                dict.set(`${jumpX},${jumpY}`, newSquare)
+                squares.push(newSquare);
+                
+
+
                 placeSquare = !placeSquare;
             }
             placeSquare = !placeSquare;
@@ -183,6 +189,7 @@
 
         let clickedSquare = null
         let clickedSquare2 = null
+        let nextSquareList = []
         canvas.addEventListener('click', (event) => {
             const rect = canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
@@ -193,24 +200,160 @@
                     if (clickedSquare && clickedSquare.clicked == true) {
                         clickedSquare.toggleColor();
                     }
-                    if (clickedSquare2 && clickedSquare2.clicked == true) {
-                        clickedSquare2.toggleColor();
-                    }
+                    for (let j = 0; j < nextSquareList.length; j++) {
+                            nextSquareList[j].clicked = false
+                        }
+
+
+
                     
                     if (square.piece == 'white pawn') {
-                        square.toggleColor();
+                        square.clicked = true;
                         clickedSquare = square
-                        for (let i = 0; i < squares.length; i++){
-                            if ((squares[i].chessY+1) == (square.chessY)  && (squares[i].chessX) == (square.chessX)){
-                            squares[i].toggleColor()
-                            clickedSquare2 = squares[i]
-                            break;
-                            }
+                        
+                        let nearEnemy = false;
+
+                        if (dict.get(`${square.chessX-1},${square.chessY-1}`) && dict.get(`${square.chessX-1},${square.chessY-1}`).piece.includes('black')) {
+                            clickedSquare2 = dict.get(`${square.chessX-1},${square.chessY-1}`)
+                            clickedSquare2.clicked = true;
+                            nextSquareList.push(clickedSquare2)
+                            let nearEnemy = true;
                         }
-                    } else if (square == clickedSquare2) {
-                        square.piece = 'white pawn'
-                        clickedSquare.piece = null
-                    } 
+                        if (dict.get(`${square.chessX+1},${square.chessY-1}`) && dict.get(`${square.chessX+1},${square.chessY-1}`).piece.includes('black')) {
+                            clickedSquare2 = dict.get(`${square.chessX+1},${square.chessY-1}`)
+                            clickedSquare2.clicked = true;
+                            nextSquareList.push(clickedSquare2)
+                            let nearEnemy = true;
+                        }
+                        else if (dict.get(`${square.chessX},${square.chessY-1}`) && !nearEnemy){
+                            clickedSquare2 = dict.get(`${square.chessX},${square.chessY-1}`)
+                            clickedSquare2.clicked = true;
+                            nextSquareList.push(clickedSquare2)
+                        }
+                    } else if (square.piece == 'white rook') {
+                        square.clicked = true;
+                        clickedSquare = square
+                        
+
+                        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                        directions.forEach(xyAdd => {
+                            let [xAdd, yAdd] = xyAdd;
+                            let validNext = true;
+                            let nextSquare = square; 
+
+                            while (validNext) {
+                                nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                                if (nextSquare) {
+                                    if (nextSquare.piece != '') {
+                                        validNext = false;
+                                    }
+
+                                    nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                    nextSquareList.push(nextSquare);
+                                } else {
+                                    validNext = false;
+                                }
+                            }
+                        });
+
+                    } else if (square.piece == 'white bishop') {
+                        square.clicked = true;
+                        clickedSquare = square
+                        
+
+                        const directions = [[1, 1], [-1, -1], [1, -1], [-1, 1]];
+                        directions.forEach(xyAdd => {
+                            let [xAdd, yAdd] = xyAdd;
+                            let validNext = true;
+                            let nextSquare = square; 
+
+                            while (validNext) {
+                                nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                                if (nextSquare) {
+                                    if (nextSquare.piece != '') {
+                                        validNext = false;
+                                    }
+
+                                    nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                    nextSquareList.push(nextSquare);
+                                } else {
+                                    validNext = false;
+                                }
+                            }
+                        });
+                    } else if (square.piece == 'white queen') {
+                        square.clicked = true;
+                        clickedSquare = square
+                        
+
+                        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+                        directions.forEach(xyAdd => {
+                            let [xAdd, yAdd] = xyAdd;
+                            let validNext = true;
+                            let nextSquare = square; 
+
+                            while (validNext) {
+                                nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                                if (nextSquare) {
+                                    if (nextSquare.piece != '') {
+                                        validNext = false;
+                                    }
+
+                                    nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                    nextSquareList.push(nextSquare);
+                                } else {
+                                    validNext = false;
+                                }
+                            }
+                        });
+                    } else if (square.piece == 'white king') {
+                        square.clicked = true;
+                        clickedSquare = square
+                        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+                        directions.forEach(xyAdd => {
+                            let [xAdd, yAdd] = xyAdd;
+                            let nextSquare = square; 
+                            nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                            if (nextSquare) {
+                                if (nextSquare.piece != '') {
+                                }
+                                nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                nextSquareList.push(nextSquare);
+                            }
+                        });
+                    } else if (square.piece == 'white knight') {
+                        square.clicked = true;
+                        clickedSquare = square
+                        const directions = [[-1,2], [1,2], [2,1] , [2,-1], [1, -2], [-1,-2], [-2,1], [-2,-1]];
+                        
+                        directions.forEach(xyAdd => {
+                            let [xAdd, yAdd] = xyAdd;
+                            let nextSquare = square; 
+                            nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                            if (nextSquare) {
+                                if (nextSquare.piece != '') {
+                                }
+                                nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                nextSquareList.push(nextSquare);
+                            }
+                        });  
+                    } else {
+
+
+                        for (let i = 0; i < nextSquareList.length; i++) {
+                            if (square == nextSquareList[i]) {
+                                square.piece = clickedSquare.piece
+                                clickedSquare.piece = ''
+                                nextSquareList = []
+                                break;
+                            }
+                            
+                        }
+
+                        
+
+                    }
+                    
 
                         
                 }
