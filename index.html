@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Game Window</title>
+    <title>Game Container</title>
     <style>
         body {
             margin: 0;
@@ -11,7 +11,7 @@
         }
         canvas {
             display: block;
-            background: #000;
+            background: #b1b1b1;
         }
     </style>
 </head>
@@ -25,14 +25,61 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // Padding around the square
+        const padding = 20;
+
+        // Calculate the size of the square based on the smaller dimension of the window
+        const squareSize = Math.min(canvas.width, canvas.height) - 2 * padding;
+
+        // Rectangle properties
+        const rect = {
+            x: (canvas.width - squareSize) / 2,
+            y: (canvas.height - squareSize) / 2,
+            width: squareSize,
+            height: squareSize,
+            color: '#e6e6e6'
+        };
+
+
+
+
         // Game loop
         function gameLoop() {
             // Clear the canvas
             context.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw a simple rectangle (you can replace this with your game logic)
-            context.fillStyle = 'red';
-            context.fillRect(50, 50, 100, 100);
+            // Draw the rectangle
+            context.fillStyle = rect.color;
+            context.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+            const dict = new Map();
+            dict.set('0,6', 'rook');
+            dict.set('1,6', 'rook');
+            
+            
+            let placeSquare = false;
+            context.fillStyle = 'grey';
+
+            for (let jumpY = 0; jumpY < 8; jumpY++) {
+                for (let jumpX = 0; jumpX < 8; jumpX++) {
+                    if (placeSquare) {
+                        context.fillStyle = 'grey';
+                        context.fillRect(rect.x+jumpX*rect.height/8, rect.y+jumpY*rect.width/8, rect.width/8, rect.height/8);
+                    }
+                    if (dict.get(`${jumpX},${jumpY}`) === 'rook' ) {
+                        context.fillStyle = 'black';
+                        context.beginPath(); 
+                        context.arc(rect.x+jumpX*rect.height/8+rect.width/16, rect.y+jumpY*rect.width/8+rect.width/16, rect.width/16, 0, Math.PI * 2);
+                        context.fill(); 
+
+                    }
+                    placeSquare = !placeSquare;
+                }
+                placeSquare = !placeSquare;
+            }
+
+
+
 
             // Request the next frame
             requestAnimationFrame(gameLoop);
