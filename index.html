@@ -67,6 +67,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const padding = 60;
+        let nextCheck;
         //Do some scaling
         let squareSize; 
         if (canvas.width > canvas.height -2*padding) {
@@ -191,9 +192,10 @@
         let clickedSquare = null
         let clickedSquare2 = null
         let nextSquareList = []
+        let nextSquareList2 = [];
         let whiteTurn = true;
         let possibleEnemyMoves = []
-        function pawn(square, dict,whiteTurn){
+        function pawn(square, dict,whiteTurn, clickmode){
             let clickedSquare2 = null
             let nextSquareList = [square]
             let enemy = whiteTurn ? 'black' : 'white'
@@ -202,13 +204,13 @@
 
             if (dict.get(`${square.chessX-1},${square.chessY+direction}`) && dict.get(`${square.chessX-1},${square.chessY+direction}`).piece.includes(enemy)) {
                 clickedSquare2 = dict.get(`${square.chessX-1},${square.chessY+direction}`)
-                clickedSquare2.clicked = true;
+                clickedSquare2.clicked = clickmode;
                 nextSquareList.push(clickedSquare2)
-                nearEnemy = true;
+                nearEnemy = clickmode;
             }
             if (dict.get(`${square.chessX+1},${square.chessY+direction}`) && dict.get(`${square.chessX+1},${square.chessY+direction}`).piece.includes(enemy)) {
                 clickedSquare2 = dict.get(`${square.chessX+1},${square.chessY+direction}`)
-                clickedSquare2.clicked = true;
+                clickedSquare2.clicked = clickmode;
                 nextSquareList.push(clickedSquare2)
                 nearEnemy = true;
             }
@@ -216,22 +218,22 @@
                 //two steps for initial move
                 if (((square.chessY == 6 && whiteTurn) | (square.chessY == 1 && !whiteTurn))&& dict.get(`${square.chessX},${square.chessY+direction}`).piece == '' && dict.get(`${square.chessX},${square.chessY+direction*2}`).piece == '' ) {
                     clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
-                    clickedSquare2.clicked = true;
+                    clickedSquare2.clicked = clickmode;
                     nextSquareList.push(clickedSquare2)
                     clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction*2}`)
-                    clickedSquare2.clicked = true;
+                    clickedSquare2.clicked = clickmode;
                     nextSquareList.push(clickedSquare2)
                 } else {
                     clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
                     if (clickedSquare2.piece =='') {
-                        clickedSquare2.clicked = true;
+                        clickedSquare2.clicked = clickmode;
                         nextSquareList.push(clickedSquare2)
                     }
                 }
             } 
             return nextSquareList
         }
-        function rookBishopQueen(square, dict,whiteTurn) {
+        function rookBishopQueen(square, dict,whiteTurn,clickmode) {
             let team = whiteTurn ? 'white' : 'black'
             let nextSquareList = [square]                       
             if (square.piece == `${team} rook`) {
@@ -254,7 +256,7 @@
                             validNext = false;
                         }
 
-                        nextSquare.clicked = !nextSquare.piece.includes(team); //true unless the next piece is a teammate
+                        nextSquare.clicked = !nextSquare.piece.includes(team) && clickmode; //true unless the next piece is a teammate nad we need clickmode true
                         nextSquareList.push(nextSquare);
                     } else {
                         validNext = false;
@@ -263,7 +265,7 @@
             });
             return nextSquareList
         }
-        function knightKing(square, dict,whiteTurn) {
+        function knightKing(square, dict, whiteTurn, clickmode) {
             let directions;
             let team = whiteTurn ? 'white' : 'black'
             let nextSquareList = [square]
@@ -280,76 +282,145 @@
                 if (nextSquare) {
                     if (nextSquare.piece != '') {
                     }
-                    nextSquare.clicked = !nextSquare.piece.includes(team);
+                    nextSquare.clicked = !nextSquare.piece.includes(team) && clickmode;
                     nextSquareList.push(nextSquare);
                 }
             });
             return nextSquareList;
         }
+        let piecePicker = false 
 
-        canvas.addEventListener('click', (event) => {
+        if (piecePicker){
+            canvas.addEventListener('mousedown', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = event.clientX - rect.left;
+                const mouseY = event.clientY - rect.top;
 
-            
-            
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+                let circleColor = 'black';
 
-            squares.forEach(square => {
-                if (document.getElementById('titleText').textContent.includes('win')) {
-                    return;
-                } else {
-                    document.getElementById('titleText').textContent = whiteTurn ? 'White turn' : 'Black turn' 
+                // Check which square was pressed and set the circle color
+                if (mouseX >= rect.x + rect.width / 4 && mouseX <= rect.x + rect.width / 2 &&
+                    mouseY >= rect.y + rect.height / 4 && mouseY <= rect.y + rect.height / 2) {
+                    circleColor = 'blue'; // First square
+                } else if (mouseX >= rect.x + rect.width / 2 && mouseX <= rect.x + 3 * rect.width / 4 &&
+                        mouseY >= rect.y + rect.height / 4 && mouseY <= rect.y + rect.height / 2) {
+                    circleColor = 'green'; // Second square
+                } else if (mouseX >= rect.x + rect.width / 4 && mouseX <= rect.x + rect.width / 2 &&
+                        mouseY >= rect.y + rect.height / 2 && mouseY <= rect.y + 3 * rect.height / 4) {
+                    circleColor = 'yellow'; // Third square
+                } else if (mouseX >= rect.x + rect.width / 2 && mouseX <= rect.x + 3 * rect.width / 4 &&
+                        mouseY >= rect.y + rect.height / 2 && mouseY <= rect.y + 3 * rect.height / 4) {
+                    circleColor = 'red'; // Fourth square
                 }
 
-                
-                if (square.isPointInside(mouseX, mouseY)) {
+                // Draw the circle
+                context.beginPath();
+                context.arc(mouseX, mouseY, 20, 0, 2 * Math.PI);
+                context.fillStyle = circleColor;
+                context.fill();
+            });
+        } else {
+            canvas.addEventListener('click', (event) => {          
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = event.clientX - rect.left;
+                const mouseY = event.clientY - rect.top;
+                let movedPiece = false;
 
-                    for (let j = 0; j < nextSquareList.length; j++) { //unmark previous markings
-                        nextSquareList[j].clicked = false
+                square = squares.forEach(square => {
+                    if (document.getElementById('titleText').textContent.includes('win')) {
+                        return;
                     }
 
-                    if ((square.piece == 'white pawn' && whiteTurn) | (square.piece == 'black pawn' && !whiteTurn)) {
-                        square.clicked = true;
-                        clickedSquare = square
-                        nextSquareList = pawn(square,dict,whiteTurn)
+                    
+                    if (square.isPointInside(mouseX, mouseY)) {
+
+                        for (let j = 0; j < nextSquareList.length; j++) { //unmark previous markings
+                            nextSquareList[j].clicked = false
+                        }
+
+                        if ((square.piece == 'white pawn' && whiteTurn) | (square.piece == 'black pawn' && !whiteTurn)) {
+                            square.clicked = true;
+                            clickedSquare = square
+                            nextSquareList = pawn(square,dict,whiteTurn, true)
+
+                            
+                        } else if (((square.piece == 'white rook' | square.piece == 'white bishop' | square.piece == 'white queen') && whiteTurn) | ((square.piece == 'black rook' | square.piece == 'black bishop' | square.piece == 'black queen') && !whiteTurn)) {
+                            square.clicked = true;
+                            clickedSquare = square
+                            nextSquareList = rookBishopQueen(square,dict,whiteTurn, true)
+
 
                         
-                    } else if (((square.piece == 'white rook' | square.piece == 'white bishop' | square.piece == 'white queen') && whiteTurn) | ((square.piece == 'black rook' | square.piece == 'black bishop' | square.piece == 'black queen') && !whiteTurn)) {
-                        square.clicked = true;
-                        clickedSquare = square
-                        nextSquareList = rookBishopQueen(square,dict,whiteTurn)
+                        } else if (((square.piece == 'white king' | square.piece == 'white knight') && whiteTurn) | ((square.piece == 'black king' | square.piece == 'black knight') && !whiteTurn)) {
+                            square.clicked = true;
+                            clickedSquare = square
+                            nextSquareList = knightKing(square,dict,whiteTurn, true)
+                        } else {
+
+                            if (nextSquareList.includes(square)) { 
+
+                                nextCheck = false;
+                                square.piece = clickedSquare.piece;
+                                whiteTurn = !square.piece.includes('white');
+                                clickedSquare.piece = '';
+                                nextSquareList = [];
+
+                                squares.forEach(square2 => {
+                                    nextSquareList2 = []
+
+                                    team = whiteTurn ? 'white' : 'black'
+
+                                    if ((square2.piece == `${team} pawn`)) {
+                                        nextSquareList2 = pawn(square2,dict,whiteTurn, false)
+                                    } else if ( ((square2.piece == `${team} rook` | square2.piece == `${team} bishop` | square2.piece == `${team} queen`))) {
+                                        nextSquareList2 = rookBishopQueen(square2,dict,whiteTurn, false)
+                                    } else if ( ((square2.piece == `${team} king` | square2.piece == `${team} knight`))) {
+                                        nextSquareList2 = knightKing(square2,dict,whiteTurn, false)
+                                    }
 
 
-                    
-                    } else if (((square.piece == 'white king' | square.piece == 'white knight') && whiteTurn) | ((square.piece == 'black king' | square.piece == 'black knight') && !whiteTurn)) {
-                        square.clicked = true;
-                        clickedSquare = square
-                        nextSquareList = knightKing(square,dict,whiteTurn)
-                    } else {
+                                    nextSquareList2.forEach(square3 => { 
+                                        if (square3.piece.includes(`${whiteTurn ?  'black': 'white'} king`)) {
+                                            nextCheck =  true
+                                            return;
+                                        }
+                                    })
+                                    nextSquareList2 = [];
+                                });
 
-                        if (nextSquareList.includes(square)) { //if we clicked on a possible next square
+                                if (nextCheck) {
+                                    square.clicked = false;
+                                    clickedSquare.piece = square.piece;
+                                    square.piece = ''
+                                    whiteTurn = !whiteTurn;
+                                    
+                                }
+                                
+
+                                return square;
+                            
 
 
-                            square.piece = clickedSquare.piece;
-                            whiteTurn = !square.piece.includes('white');
-                            clickedSquare.piece = '';
-                            nextSquareList = [];
 
+
+                            }
+                            
 
                         }
                         
 
+                            
                     }
-                    
-
-                        
+                });
+                if (nextCheck){
+                    document.getElementById('titleText').textContent = whiteTurn ? 'Checked position. Try again. White turn.' : 'Checked position. Try again. Black turn.' 
+                } else {
+                    document.getElementById('titleText').textContent = whiteTurn ? 'White turn' : 'Black turn' 
                 }
+
+
             });
-
-
-
-        });
+        }
         // Game loop
         function gameLoop() {
             // Clear the canvas
@@ -372,6 +443,74 @@
                     blackKing = true
                 }
             }); 
+            if (piecePicker) {
+            // Draw the smaller background square
+            context.fillStyle = 'white';
+            context.fillRect(rect.x + rect.width / 4, rect.y + rect.height / 4, rect.width / 2, rect.height / 2);
+
+            // Draw the red squares behind the pieces
+            context.fillStyle = 'red';
+
+            // Red square behind the first image (bR.svg)
+            context.fillRect(rect.x + rect.width / 4, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+
+            // Red square behind the second image (bQ.svg)
+            context.fillRect(rect.x + rect.width / 2, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+
+            // Red square behind the third image (bN.svg)
+            context.fillRect(rect.x + rect.width / 4, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+
+            // Red square behind the fourth image (bP.svg)
+            context.fillRect(rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+
+            // Draw the first image (bR.svg)
+            let svgImage1 = new Image();
+            svgImage1.src = './images/monarchy/bR.svg';
+
+            svgImage1.onload = () => {
+                context.drawImage(svgImage1, rect.x + rect.width / 4, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+            };
+
+            if (svgImage1.complete) {
+                context.drawImage(svgImage1, rect.x + rect.width / 4, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+            }
+
+            // Draw the second image (bQ.svg)
+            let svgImage2 = new Image();
+            svgImage2.src = './images/monarchy/bQ.svg';
+
+            svgImage2.onload = () => {
+                context.drawImage(svgImage2, rect.x + rect.width / 2, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+            };
+
+            if (svgImage2.complete) {
+                context.drawImage(svgImage2, rect.x + rect.width / 2, rect.y + rect.height / 4, rect.width / 4, rect.height / 4);
+            }
+
+            // Draw the third image (bN.svg)
+            let svgImage3 = new Image();
+            svgImage3.src = './images/monarchy/bN.svg';
+
+            svgImage3.onload = () => {
+                context.drawImage(svgImage3, rect.x + rect.width / 4, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+            };
+
+            if (svgImage3.complete) {
+                context.drawImage(svgImage3, rect.x + rect.width / 4, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+            }
+
+            // Draw the fourth image (bP.svg)
+            let svgImage4 = new Image();
+            svgImage4.src = './images/monarchy/bP.svg';
+
+            svgImage4.onload = () => {
+                context.drawImage(svgImage4, rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+            };
+
+            if (svgImage4.complete) {
+                context.drawImage(svgImage4, rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 4, rect.height / 4);
+            }
+            }
 
 
             if (!blackKing) {
