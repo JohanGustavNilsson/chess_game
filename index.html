@@ -23,6 +23,7 @@
         const canvas = document.getElementById('gameCanvas');
         const context = canvas.getContext('2d');
 
+
         //set initial piece locations
         const dict = new Map([
             // Black pieces
@@ -191,6 +192,101 @@
         let clickedSquare2 = null
         let nextSquareList = []
         let whiteTurn = true;
+        let possibleEnemyMoves = []
+        function pawn(square, dict,whiteTurn){
+            let clickedSquare2 = null
+            let nextSquareList = [square]
+            let enemy = whiteTurn ? 'black' : 'white'
+            let direction = whiteTurn ? -1: 1;
+            let nearEnemy = false;
+
+            if (dict.get(`${square.chessX-1},${square.chessY+direction}`) && dict.get(`${square.chessX-1},${square.chessY+direction}`).piece.includes(enemy)) {
+                clickedSquare2 = dict.get(`${square.chessX-1},${square.chessY+direction}`)
+                clickedSquare2.clicked = true;
+                nextSquareList.push(clickedSquare2)
+                nearEnemy = true;
+            }
+            if (dict.get(`${square.chessX+1},${square.chessY+direction}`) && dict.get(`${square.chessX+1},${square.chessY+direction}`).piece.includes(enemy)) {
+                clickedSquare2 = dict.get(`${square.chessX+1},${square.chessY+direction}`)
+                clickedSquare2.clicked = true;
+                nextSquareList.push(clickedSquare2)
+                nearEnemy = true;
+            }
+            if (dict.get(`${square.chessX},${square.chessY+direction}`) && !nearEnemy){ //forward move
+                //two steps for initial move
+                if (((square.chessY == 6 && whiteTurn) | (square.chessY == 1 && !whiteTurn))&& dict.get(`${square.chessX},${square.chessY+direction}`).piece == '' && dict.get(`${square.chessX},${square.chessY+direction*2}`).piece == '' ) {
+                    clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
+                    clickedSquare2.clicked = true;
+                    nextSquareList.push(clickedSquare2)
+                    clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction*2}`)
+                    clickedSquare2.clicked = true;
+                    nextSquareList.push(clickedSquare2)
+                } else {
+                    clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
+                    if (clickedSquare2.piece =='') {
+                        clickedSquare2.clicked = true;
+                        nextSquareList.push(clickedSquare2)
+                    }
+                }
+            } 
+            return nextSquareList
+        }
+        function rookBishopQueen(square, dict,whiteTurn) {
+            let team = whiteTurn ? 'white' : 'black'
+            let nextSquareList = [square]                       
+            if (square.piece == `${team} rook`) {
+                directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            } else if (square.piece == `${team} bishop`) {
+                directions = [[1, 1], [-1, -1], [1, -1], [-1, 1]];
+            } else if (square.piece == `${team} queen`) {
+                directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+            }
+
+            directions.forEach(xyAdd => {
+                let [xAdd, yAdd] = xyAdd;
+                let validNext = true;
+                let nextSquare = square; 
+
+                while (validNext) {
+                    nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                    if (nextSquare) {
+                        if (nextSquare.piece != '') {
+                            validNext = false;
+                        }
+
+                        nextSquare.clicked = !nextSquare.piece.includes(team); //true unless the next piece is a teammate
+                        nextSquareList.push(nextSquare);
+                    } else {
+                        validNext = false;
+                    }
+                }
+            });
+            return nextSquareList
+        }
+        function knightKing(square, dict,whiteTurn) {
+            let directions;
+            let team = whiteTurn ? 'white' : 'black'
+            let nextSquareList = [square]
+            if (square.piece == `${team} king`) {
+                directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+            } else {
+                directions = [[-1,2], [1,2], [2,1] , [2,-1], [1, -2], [-1,-2], [-2,1], [-2,-1]];
+            }
+
+            directions.forEach(xyAdd => {
+                let [xAdd, yAdd] = xyAdd;
+                let nextSquare = square; 
+                nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
+                if (nextSquare) {
+                    if (nextSquare.piece != '') {
+                    }
+                    nextSquare.clicked = !nextSquare.piece.includes(team);
+                    nextSquareList.push(nextSquare);
+                }
+            });
+            return nextSquareList;
+        }
+
         canvas.addEventListener('click', (event) => {
 
             
@@ -198,6 +294,7 @@
             const rect = canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
+
             squares.forEach(square => {
                 if (document.getElementById('titleText').textContent.includes('win')) {
                     return;
@@ -207,114 +304,39 @@
 
                 
                 if (square.isPointInside(mouseX, mouseY)) {
-                    if (clickedSquare && clickedSquare.clicked == true) {
-                        clickedSquare.toggleColor();
+
+                    for (let j = 0; j < nextSquareList.length; j++) { //unmark previous markings
+                        nextSquareList[j].clicked = false
                     }
-                    for (let j = 0; j < nextSquareList.length; j++) {
-                            nextSquareList[j].clicked = false
-                        }
 
                     if ((square.piece == 'white pawn' && whiteTurn) | (square.piece == 'black pawn' && !whiteTurn)) {
                         square.clicked = true;
                         clickedSquare = square
-                        let enemy = whiteTurn ? 'black' : 'white'
-                        let direction = whiteTurn ? -1: 1;
-                        let nearEnemy = false;
-
-                        if (dict.get(`${square.chessX-1},${square.chessY+direction}`) && dict.get(`${square.chessX-1},${square.chessY+direction}`).piece.includes(enemy)) {
-                            clickedSquare2 = dict.get(`${square.chessX-1},${square.chessY+direction}`)
-                            clickedSquare2.clicked = true;
-                            nextSquareList.push(clickedSquare2)
-                            nearEnemy = true;
-                        }
-                        if (dict.get(`${square.chessX+1},${square.chessY+direction}`) && dict.get(`${square.chessX+1},${square.chessY+direction}`).piece.includes(enemy)) {
-                            clickedSquare2 = dict.get(`${square.chessX+1},${square.chessY+direction}`)
-                            clickedSquare2.clicked = true;
-                            nextSquareList.push(clickedSquare2)
-                            nearEnemy = true;
-                        }
-                         if (dict.get(`${square.chessX},${square.chessY+direction}`) && !nearEnemy){ //forward move
-                            //two steps for initial move
-                            if (((square.chessY == 6 && whiteTurn) | (square.chessY == 1 && !whiteTurn))&& dict.get(`${square.chessX},${square.chessY+direction}`).piece == '' && dict.get(`${square.chessX},${square.chessY+direction*2}`).piece == '' ) {
-                                clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
-                                clickedSquare2.clicked = true;
-                                nextSquareList.push(clickedSquare2)
-                                clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction*2}`)
-                                clickedSquare2.clicked = true;
-                                nextSquareList.push(clickedSquare2)
-                            } else {
-                                clickedSquare2 = dict.get(`${square.chessX},${square.chessY+direction}`)
-                                if (clickedSquare2.piece =='') {
-                                    clickedSquare2.clicked = true;
-                                    nextSquareList.push(clickedSquare2)
-                                }
-                            }
-                        } 
+                        nextSquareList = pawn(square,dict,whiteTurn)
 
                         
                     } else if (((square.piece == 'white rook' | square.piece == 'white bishop' | square.piece == 'white queen') && whiteTurn) | ((square.piece == 'black rook' | square.piece == 'black bishop' | square.piece == 'black queen') && !whiteTurn)) {
                         square.clicked = true;
-                        let team = whiteTurn ? 'white' : 'black'
                         clickedSquare = square
-                        
-                        if (square.piece == `${team} rook`) {
-                            directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-                        } else if (square.piece == `${team} bishop`) {
-                            directions = [[1, 1], [-1, -1], [1, -1], [-1, 1]];
-                        } else if (square.piece == `${team} queen`) {
-                            directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
-                        }
+                        nextSquareList = rookBishopQueen(square,dict,whiteTurn)
 
-                        directions.forEach(xyAdd => {
-                            let [xAdd, yAdd] = xyAdd;
-                            let validNext = true;
-                            let nextSquare = square; 
-
-                            while (validNext) {
-                                nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
-                                if (nextSquare) {
-                                    if (nextSquare.piece != '') {
-                                        validNext = false;
-                                    }
-
-                                    nextSquare.clicked = !nextSquare.piece.includes(team); //true unless the next piece is a teammate
-                                    nextSquareList.push(nextSquare);
-                                } else {
-                                    validNext = false;
-                                }
-                            }
-                        });
 
                     
                     } else if (((square.piece == 'white king' | square.piece == 'white knight') && whiteTurn) | ((square.piece == 'black king' | square.piece == 'black knight') && !whiteTurn)) {
                         square.clicked = true;
-                        let directions;
                         clickedSquare = square
-                        let team = whiteTurn ? 'white' : 'black'
-                        if (square.piece == `${team} king`) {
-                            directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
-                        } else{
-                            directions = [[-1,2], [1,2], [2,1] , [2,-1], [1, -2], [-1,-2], [-2,1], [-2,-1]];
-                        }
-
-                        directions.forEach(xyAdd => {
-                            let [xAdd, yAdd] = xyAdd;
-                            let nextSquare = square; 
-                            nextSquare = dict.get(`${nextSquare.chessX + xAdd},${nextSquare.chessY + yAdd}`);
-                            if (nextSquare) {
-                                if (nextSquare.piece != '') {
-                                }
-                                nextSquare.clicked = !nextSquare.piece.includes(team);
-                                nextSquareList.push(nextSquare);
-                            }
-                        });
+                        nextSquareList = knightKing(square,dict,whiteTurn)
                     } else {
 
-                        if (nextSquareList.includes(square)) { //is we clicked on a possible next square
-                                square.piece = clickedSquare.piece
-                                whiteTurn = !square.piece.includes('white') 
-                                clickedSquare.piece = ''
-                                nextSquareList = []
+                        if (nextSquareList.includes(square)) { //if we clicked on a possible next square
+
+
+                            square.piece = clickedSquare.piece;
+                            whiteTurn = !square.piece.includes('white');
+                            clickedSquare.piece = '';
+                            nextSquareList = [];
+
+
                         }
                         
 
@@ -324,6 +346,8 @@
                         
                 }
             });
+
+
 
         });
         // Game loop
