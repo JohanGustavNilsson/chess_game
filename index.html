@@ -338,7 +338,7 @@
                             if (nextSquare) {
                                 if (nextSquare.piece != '') {
                                 }
-                                nextSquare.clicked = nextSquare.piece.includes('white') ? false : true;
+                                nextSquare.clicked = nextSquare.piece.includes(friend) ? false : true;
                                 nextSquareList.push(nextSquare);
                             }
                         });
@@ -388,14 +388,8 @@
                         
                 }
             });
-            if (!blackKing) {
-                document.getElementById('titleText').textContent = 'White side wins'
-            }
-            if (!whiteKing) {
-                document.getElementById('titleText').textContent = 'Black side wins'
-            }
-        });
 
+        });
         // Game loop
         function gameLoop() {
             // Clear the canvas
@@ -407,16 +401,31 @@
 
 
             //draw the smaller squares
-            squares.forEach(square => square.draw(context)); 
+            let blackKing = false;
+            let whiteKing = false;
+            squares.forEach(square => {
+                square.draw(context)
+                if (square.piece == 'white king') {
+                    whiteKing = true
+                }
+                if (square.piece == 'black king') {
+                    blackKing = true
+                }
+            }); 
 
 
-
+            if (!blackKing) {
+                document.getElementById('titleText').textContent = 'White side wins'
+                return;
+            }
+            if (!whiteKing) {
+                document.getElementById('titleText').textContent = 'Black side wins'
+                return;
+            }
 
             // Request the next frame
             requestAnimationFrame(gameLoop);
-            if (document.getElementById('titleText').textContent.includes('wins')){
-                return;
-            }
+
         }
 
         // Start the game loop

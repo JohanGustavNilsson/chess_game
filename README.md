@@ -1,2 +1,2 @@
 # chess_game
-Trying to build a chess game in github pages
+Built a simple chess game where everything is run from a single index file. The solution is probably suboptimal, i just wrote it for experimental puposes. 
